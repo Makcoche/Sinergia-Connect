@@ -84,48 +84,29 @@ export default function SaaSCompanyPanel({
   const [targetSocials, setTargetSocials] = useState<string[]>(['Facebook', 'Instagram']);
   const [scheduledDate, setScheduledDate] = useState('2026-06-11');
   const [scheduledTime, setScheduledTime] = useState('14:30');
-  const [postsList, setPostsList] = useState<any[]>([
-    { id: 'pst-1', copy: '¡Visita nuestra tienda oficial en Sinergia Connect y obtén 15% de descuento en fletes!', channels: ['Facebook', 'Instagram'], date: '2026-06-10 18:00', status: 'published' },
-    { id: 'pst-2', copy: 'Lanzamiento de nuevas soluciones SaaS para empresas multi-sucursal en Colombia.', channels: ['LinkedIn', 'Google Business Profile'], date: '2026-06-12 10:00', status: 'scheduled' }
-  ]);
+  const [postsList, setPostsList] = useState<any[]>([]);
 
   // Unified Inbox messages (Facebook, IG, WhatsApp, Telegram)
-  const [inboxMessages, setInboxMessages] = useState<any[]>([
-    { id: 'msg-1', channel: 'WhatsApp', sender: 'Juan Carlos (Cliente)', text: 'Hola, ¿tienen stock disponible del Control Remoto Comando?', time: 'Hace 5 min', replies: [] },
-    { id: 'msg-2', channel: 'Instagram', sender: 'María Lucía', text: 'Me interesa la propuesta del modelo Zero Trust. ¿Tienen manuales?', time: 'Hace 1 hora', replies: [] },
-    { id: 'msg-3', channel: 'Facebook Messenger', sender: 'Felipe Giraldo', text: '¿Trabajan los fines de semana en la sede de Envigado?', time: 'Hace 3 horas', replies: [] }
-  ]);
-  const [activeInboxId, setActiveInboxId] = useState('msg-1');
+  const [inboxMessages, setInboxMessages] = useState<any[]>([]);
+  const [activeInboxId, setActiveInboxId] = useState('');
   const [inboxReplyText, setInboxReplyText] = useState('');
 
   // Social CRM Leads & Comments Logger
-  const [socialCRMCount, setSocialCRMCount] = useState(34);
-  const [socialCRMLeads, setSocialCRMLeads] = useState<any[]>([
-    { id: 'ld-1', name: 'Alfonso Reyes', source: 'WhatsApp API', keyword: 'PROMO_FLETE', phone: '+57 312 400 9012', status: 'Capturado', date: '2026-06-10 16:45' },
-    { id: 'ld-2', name: 'Laura Restrepo', source: 'ManyChat Flow', keyword: 'PRECIO_COMANDO', phone: 'laura@restr.co', status: 'En Seguimiento', date: '2026-06-10 15:20' },
-    { id: 'ld-3', name: 'Gabriel Barbosa', source: 'Meta API', keyword: 'NIVEL_3_KYC', phone: 'gabriel.barbosa@outlook.com', status: 'Interesado', date: '2026-06-09 11:10' }
-  ]);
+  const [socialCRMCount, setSocialCRMCount] = useState(0);
+  const [socialCRMLeads, setSocialCRMLeads] = useState<any[]>([]);
 
   // Automatización Config
-  const [automationKeywords, setAutomationKeywords] = useState<any[]>([
-    { id: 'kw-1', trigger: 'precio', channel: 'WhatsApp Cloud API', response: 'Hola, gracias por escribirnos. El precio del Control Remoto es de $22.00 USD. ¿Deseas ordenar?', status: true, leadsCaptured: 18 },
-    { id: 'kw-2', trigger: 'catalogo', channel: 'ManyChat Flow', response: '¡Hola! Te compartimos nuestro catálogo multisucursal oficial de Sinergia Connect: click.ly/sinergia-catalogo', status: true, leadsCaptured: 27 },
-    { id: 'kw-3', trigger: 'ubicacion', channel: 'Meta API', response: 'Nuestra Casa Matriz está en El Poblado, Medellín, y contamos con 3 sucursales adicionales.', status: false, leadsCaptured: 0 }
-  ]);
+  const [automationKeywords, setAutomationKeywords] = useState<any[]>([]);
 
   // AI Content Generator Engine
   const [aiIndustry, setAiIndustry] = useState('Tecnología / SaaS');
   const [aiObjective, setAiObjective] = useState('Generar ventas directas');
-  const [aiKeywords, setAiKeywords] = useState('innovación, eficiencia, automatización, SNG Token');
+  const [aiKeywords, setAiKeywords] = useState('innovación, SNG Token');
   const [aiIsGenerating, setAiIsGenerating] = useState(false);
   const [aiGeneratedResult, setAiGeneratedResult] = useState('');
 
   // --- MULTISUCURSAL STATE ---
-  const [branches, setBranches] = useState<any[]>([
-    { id: 'br-1', name: 'Sinergia Casa Matriz - El Poblado', type: 'Casa Matriz', address: 'Cra 43A #1-50, Medellín', manager: 'Valeria Restrepo', phone: '+57 301 928 2912', status: 'Abierto' },
-    { id: 'br-2', name: 'Sede Comercial Nordeste - Envigado', type: 'Sucursal', address: 'Calle 10 Sur #48-20, Envigado', manager: 'Manuel Torres', phone: '+57 320 881 0022', status: 'Abierto' },
-    { id: 'br-3', name: 'Centro de Distribución - Rionegro', type: 'Punto de Venta / Despacho', address: 'Zona Franca Rionegro, Bodega 4', manager: 'Lina Maria', phone: '+57 311 552 2341', status: 'Abierto' }
-  ]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [showAddBranch, setShowAddBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState('');
   const [newBranchType, setNewBranchType] = useState('Sucursal');
@@ -134,29 +115,17 @@ export default function SaaSCompanyPanel({
   const [newBranchPhone, setNewBranchPhone] = useState('');
 
   // Independent Inventory per succursal
-  const [branchInventory, setBranchInventory] = useState<Record<string, Record<string, number>>>({
-    'br-1': { 'Control Remoto Comando': 40, 'Sensor Capacitivo SNG': 15 },
-    'br-2': { 'Control Remoto Comando': 15, 'Sensor Capacitivo SNG': 5 },
-    'br-3': { 'Control Remoto Comando': 150, 'Sensor Capacitivo SNG': 50 }
-  });
+  const [branchInventory, setBranchInventory] = useState<Record<string, Record<string, number>>>({});
 
   // --- DOCUMENT MANAGER ---
-  const [documents, setDocuments] = useState<any[]>([
-    { id: 'doc-1', name: 'Contrato_Afiliacion_Sinergia_SaaS.pdf', type: 'Contrato', size: '2.4 MB', uploadedBy: 'Super Admin', uploadedAt: '2026-06-09 11:30', permission: 'Solo Administradores' },
-    { id: 'doc-2', name: 'Resolución_Cumplimiento_Regulatorio.pdf', type: 'Certificado', size: '1.1 MB', uploadedBy: 'Diana Restrepo', uploadedAt: '2026-06-08 15:45', permission: 'Inquilinos Autorizados' },
-    { id: 'doc-3', name: 'Manual_Operativo_Multisucursal_v2.pdf', type: 'Manual', size: '4.8 MB', uploadedBy: 'Manuel Torres', uploadedAt: '2026-06-10 10:12', permission: 'Público General' }
-  ]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [fileToUpload, setFileToUpload] = useState<any>(null);
   const [docTypeChoice, setDocTypeChoice] = useState('Contrato');
   const [docPermChoice, setDocPermChoice] = useState('Solo Administradores');
 
   // --- INTERNAL COMMUNICATION ---
   const [internalChannel, setInternalChannel] = useState('#general');
-  const [internalMessages, setInternalMessages] = useState<any[]>([
-    { id: 'im-1', sender: 'Valeria Restrepo (Socio)', text: 'Equipo, recuerden revisar la documentación KYC para asegurar la promoción de Sello nivel 3.', time: '09:15 AM' },
-    { id: 'im-2', sender: 'Manuel Torres (Logística)', text: 'Listo Valeria. El inventario de Rionegro ya está conectado en el nuevo módulo de Sucursales.', time: '09:22 AM' },
-    { id: 'im-3', sender: 'Lina Maria', text: 'Hoy tenemos reunión de Business Intelligence a las 3:00 PM.', time: '10:05 AM' }
-  ]);
+  const [internalMessages, setInternalMessages] = useState<any[]>([]);
   const [internalInputMsg, setInternalInputMsg] = useState('');
 
   // Videocall simulator

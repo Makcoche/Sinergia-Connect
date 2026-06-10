@@ -28,12 +28,7 @@ interface Review {
   date: string;
 }
 
-const INITIAL_REVIEWS: Review[] = [
-  { companyId: 'comp-1', author: 'Valeria Restrepo', rating: 5, comment: 'Excelente flete refrigerado, la temperatura de las frutas se mantuvo intacta de Rionegro a Turbo.', date: '2026-06-08' },
-  { companyId: 'comp-2', author: 'Manuel Beltrán', rating: 4, comment: 'Compro mucho repuestos mecánicos acá para la tractomula, buena disponibilidad.', date: '2026-06-05' },
-  { companyId: 'comp-3', author: 'Lina Marcela', rating: 5, comment: 'La suite presidencial con vista al mar de Bocagrande es de otro mundo. Súper limpio.', date: '2026-06-09' },
-  { companyId: 'comp-4', author: 'Carlos Mendoza', rating: 5, comment: 'Hicimos el recorrido al Valle del Cocora en Quindío y las guías fueron muy profesionales con buen dominio de inglés.', date: '2026-06-07' }
-];
+const INITIAL_REVIEWS: Review[] = [];
 
 export default function DirectorioModule({ companies }: DirectorioProps) {
   const [searchTerm, setSearchTerm] = useState('');

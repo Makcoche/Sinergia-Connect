@@ -53,75 +53,9 @@ interface InmobiliariaProps {
   isGuest?: boolean;
 }
 
-const INITIAL_PROPERTIES: Property[] = [
-  {
-    id: 'prop-1',
-    title: 'Finca Bananera Carepa Real',
-    type: 'finca',
-    dealType: 'venta',
-    price: 135000,
-    location: 'Carepa - Vía Platanera',
-    sizeSqM: 12000,
-    image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&auto=format&fit=crop&q=80',
-    description: 'Excelente finca bananera en plena producción con sistema de riego automatizado, canales de drenaje óptimos y excelente acceso para tractomulas de carga.',
-    featured: true,
-    coordinates: '7.7554° N, 76.6541° W'
-  },
-  {
-    id: 'prop-2',
-    title: 'Apartamento Duplex Vista Hermosa',
-    type: 'apartamento',
-    dealType: 'arriendo',
-    price: 450,
-    location: 'Apartadó - Barrio Centro Ortiz',
-    sizeSqM: 120,
-    rooms: 3,
-    bathrooms: 2,
-    image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=600&auto=format&fit=crop&q=80',
-    description: 'Estupendo apartamento duplex amoblado, cocina integral open-concept, balcón panorámico y aire acondicionado inverter en todas las alcobas.',
-    featured: true,
-    coordinates: '7.8821° N, 76.6291° W'
-  },
-  {
-    id: 'prop-3',
-    title: 'Bodega Logística Puerto Frío',
-    type: 'bodega',
-    dealType: 'arriendo',
-    price: 1800,
-    location: 'Chigorodó - Zona Industrial',
-    sizeSqM: 850,
-    image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=600&auto=format&fit=crop&q=80',
-    description: 'Bodega de almacenamiento de alta resistencia con muelles de carga, andenes de despacho refrigerados y subestación eléctrica propia.',
-    featured: false,
-    coordinates: '7.6710° N, 76.6802° W'
-  },
-  {
-    id: 'prop-4',
-    title: 'Lote Urbanizable Turbaco Gold',
-    type: 'lote',
-    dealType: 'venta',
-    price: 45000,
-    location: 'Turbo - Frente al Boulevard Marítimo',
-    sizeSqM: 1500,
-    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=600&auto=format&fit=crop&q=80',
-    description: 'Terreno plano de alta densidad comercial contiguo a las nuevas obras del puerto marítimo. Servicios de acueducto y luz ya instalados en pie de lote.',
-    featured: false,
-    coordinates: '8.0934° N, 76.7279° W'
-  }
-];
+const INITIAL_PROPERTIES: Property[] = [];
 
-const INITIAL_LEADS: Lead[] = [
-  {
-    id: 'lead-1',
-    propertyTitle: 'Finca Bananera Carepa Real',
-    clientName: 'Alejandro Restrepo',
-    clientEmail: 'alejandro@bananassur.com',
-    clientPhone: '+57 321 889 0101',
-    message: 'Estoy interesado en visitarla esta misma semana. Busco financiamiento directo.',
-    status: 'contactado',
-    createdAt: '2026-06-09T14:30:00Z'
-  }
-];
+const INITIAL_LEADS: Lead[] = [];
 
 export default function InmobiliariaModule({ wallet, onDecreaseWallet, triggerNotification, isGuest }: InmobiliariaProps) {
   const [properties, setProperties] = useState<Property[]>(INITIAL_PROPERTIES);
