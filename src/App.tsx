@@ -306,6 +306,10 @@ export default function App() {
     triggerNotification('Sesión finalizada', 'Sesión cerrada. Ahora estás navegando en modo Invitado.', 'system');
   };
 
+  const handleUpdateUserProfile = (userId: string, updates: Partial<UserProfile>) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+  };
+
   // 4. Wallet recharge
   const handleRechargeWallet = (amount: number, description: string) => {
     const updatedWallets = { ...wallets };
@@ -1092,6 +1096,8 @@ export default function App() {
                 onRegisterUser={handleOnboardingRegister}
                 onSwitchSession={handleSwitchSession}
                 onLogout={handleLogout}
+                onUpdateUserProfile={handleUpdateUserProfile}
+                onAddAuditLog={addAuditLog}
               />
             )}
 
@@ -1221,6 +1227,7 @@ export default function App() {
 
             {activeTab === 'saas_company' && (
               <SaaSCompanyPanel
+                currentUser={currentUser}
                 currentCompany={companies.find(c => c.id === currentUser.companyId) || companies[0]}
                 products={products}
                 users={users}
@@ -1241,12 +1248,14 @@ export default function App() {
                 auditLogs={auditLogs}
                 transactions={transactions}
                 wallets={Object.values(wallets)}
+                users={users}
                 onAddCompany={handleAddCompany}
                 onUpdateCompany={handleUpdateCompany}
                 onDeleteCompany={handleDeleteCompany}
                 onAddProduct={handleAddProduct}
                 onDeleteProduct={handleDeleteProduct}
                 onAddAuditLog={addAuditLog}
+                onUpdateUserProfile={handleUpdateUserProfile}
               />
             )}
           </div>

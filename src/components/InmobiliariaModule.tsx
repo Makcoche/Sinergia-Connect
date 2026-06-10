@@ -525,13 +525,15 @@ export default function InmobiliariaModule({ wallet, onDecreaseWallet, triggerNo
                     </div>
 
                     <div className="flex gap-2.5">
-                      <button
-                        onClick={() => handleDeleteProperty(prop.id)}
-                        className="p-1.5 bg-rose-50 text-rose-600 hover:text-rose-800 rounded transition-colors"
-                        title="Eliminar publicación"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {!isGuest && (
+                        <button
+                          onClick={() => handleDeleteProperty(prop.id)}
+                          className="p-1.5 bg-rose-50 text-rose-600 hover:text-rose-800 rounded transition-colors"
+                          title="Eliminar publicación"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => setContactingProperty(prop)}
                         className="px-3 py-1 bg-indigo-650 hover:bg-slate-900 border border-transparent text-white rounded text-[10.5px] font-bold transition-all uppercase tracking-wider"

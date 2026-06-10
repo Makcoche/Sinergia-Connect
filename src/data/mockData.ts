@@ -17,13 +17,145 @@ import {
 } from '../types';
 
 export const INITIAL_USERS: UserProfile[] = [
-  { id: 'usr-1', name: 'Jose Gregorio Admin', email: 'josegregoriourdanetaguadama@gmail.com', role: 'super_admin', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80' },
-  { id: 'usr-2', name: 'Carlos Mendoza', email: 'carlos@sinergialogistica.com', role: 'company_admin', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', companyId: 'comp-1' },
-  { id: 'usr-3', name: 'Valeria Restrepo', email: 'v.restrepo@buyer.com', role: 'client', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80' },
-  { id: 'usr-4', name: 'Manuel Beltrán', email: 'manuel@driver.sinergia.com', role: 'driver', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80' },
-  { id: 'usr-5', name: 'Diana Turbay', email: 'diana@andesaventura.com', role: 'tour_operator', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80', companyId: 'comp-4' },
-  { id: 'usr-6', name: 'Santiago Bernal', email: 'santiago@royalhotels.com', role: 'hotel_admin', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80', companyId: 'comp-3' },
-  { id: 'usr-7', name: 'Lina Marcela', email: 'lina@megastore.com', role: 'merchant', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&auto=format&fit=crop&q=80', companyId: 'comp-2' }
+  { 
+    id: 'usr-1', 
+    name: 'Jose Gregorio Admin', 
+    email: 'josegregoriourdanetaguadama@gmail.com', 
+    role: 'super_admin', 
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    verifLevel: 3,
+    sellos: ['🟢 Usuario Verificado', '🟣 KYC Completo', '⭐ Premium', '🏆 Aliado Estratégico Sinergia'],
+    isMfaEnabled: true,
+    mfaType: 'totp',
+    documentId: 'CC-109022',
+    phone: '+57 322 900 1212',
+    kycDetails: {
+      status: 'verified',
+      razonSocial: 'Sinergia Holding Ltd',
+      nit: '900.223.112-9',
+      specificSectors: ['inmobiliaria']
+    }
+  },
+  { 
+    id: 'usr-2', 
+    name: 'Carlos Mendoza', 
+    email: 'carlos@sinergialogistica.com', 
+    role: 'company_admin', 
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80', 
+    companyId: 'comp-1',
+    verifLevel: 3,
+    sellos: ['🟢 Usuario Verificado', '🔵 Empresa Verificada', '🟣 KYC Completo'],
+    isMfaEnabled: true,
+    mfaType: 'sms',
+    documentId: 'CC-102030',
+    phone: '+57 300 456 7890',
+    kycDetails: {
+      status: 'verified',
+      razonSocial: 'Sinergia Cargo & Logística S.A.S',
+      nit: '800.124.234-5',
+      licenciaConducir: 'CC-102030-TR',
+      soat: 'SOAT-2026-X1',
+      tarjetaPropiedad: 'TP-9921',
+      specificSectors: ['transporte']
+    }
+  },
+  { 
+    id: 'usr-3', 
+    name: 'Valeria Restrepo', 
+    email: 'v.restrepo@buyer.com', 
+    role: 'client', 
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    verifLevel: 2,
+    sellos: ['🟢 Usuario Verificado'],
+    isMfaEnabled: false,
+    mfaType: 'none',
+    documentId: 'CC-445122',
+    phone: '+57 312 909 8812',
+    kycDetails: {
+      status: 'verified'
+    }
+  },
+  { 
+    id: 'usr-4', 
+    name: 'Manuel Beltrán', 
+    email: 'manuel@driver.sinergia.com', 
+    role: 'driver', 
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    verifLevel: 3,
+    sellos: ['🟢 Usuario Verificado', '🟣 KYC Completo'],
+    isMfaEnabled: true,
+    mfaType: 'email',
+    documentId: 'CC-880445',
+    phone: '+57 322 111 2233',
+    kycDetails: {
+      status: 'verified',
+      licenciaConducir: 'C2-880445',
+      soat: 'S-7721832',
+      tarjetaPropiedad: 'TP-83210',
+      specificSectors: ['transporte']
+    }
+  },
+  { 
+    id: 'usr-5', 
+    name: 'Diana Turbay', 
+    email: 'diana@andesaventura.com', 
+    role: 'tour_operator', 
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&auto=format&fit=crop&q=80', 
+    companyId: 'comp-4',
+    verifLevel: 3,
+    sellos: ['🟢 Usuario Verificado', '🔵 Empresa Verificada', '🟣 KYC Completo', '🟡 Negocio Destacado'],
+    isMfaEnabled: true,
+    mfaType: 'totp',
+    documentId: 'CC-553123',
+    phone: '+57 312 888 7777',
+    kycDetails: {
+      status: 'verified',
+      razonSocial: 'Andes Aventuras S.A.S',
+      nit: '900.881.233-1',
+      rnt: 'RNT-45521',
+      specificSectors: ['turismo']
+    }
+  },
+  { 
+    id: 'usr-6', 
+    name: 'Santiago Bernal', 
+    email: 'santiago@royalhotels.com', 
+    role: 'hotel_admin', 
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80', 
+    companyId: 'comp-3',
+    verifLevel: 3,
+    sellos: ['🟢 Usuario Verificado', '🔵 Empresa Verificada', '🟣 KYC Completo', '⭐ Premium'],
+    isMfaEnabled: true,
+    mfaType: 'totp',
+    documentId: 'CC-760512',
+    phone: '+57 315 222 3333',
+    kycDetails: {
+      status: 'verified',
+      razonSocial: 'Consorcio Royal Hoteles de Colombia',
+      nit: '809.112.551-0',
+      rnt: 'RNT-88129',
+      specificSectors: ['hotelero']
+    }
+  },
+  { 
+    id: 'usr-7', 
+    name: 'Lina Marcela', 
+    email: 'lina@megastore.com', 
+    role: 'merchant', 
+    avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&auto=format&fit=crop&q=80', 
+    companyId: 'comp-2',
+    verifLevel: 3,
+    sellos: ['🟢 Usuario Verificado', '🔵 Empresa Verificada', '🟣 KYC Completo'],
+    isMfaEnabled: false,
+    mfaType: 'none',
+    documentId: 'CC-552319',
+    phone: '+57 311 987 6543',
+    kycDetails: {
+      status: 'verified',
+      razonSocial: 'Mercado Sinergia Super Store S.A.',
+      nit: '710.223.111-2'
+    }
+  }
 ];
 
 export const INITIAL_COMPANIES: Company[] = [

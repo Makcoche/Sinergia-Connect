@@ -25,7 +25,8 @@ import {
   UserPlus, 
   X, 
   Play, 
-  Fingerprint 
+  Fingerprint,
+  Award
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -36,12 +37,14 @@ interface AdminDashboardProps {
   auditLogs: AuditLog[];
   transactions: Transaction[];
   wallets: Wallet[];
+  users?: UserProfile[];
   onAddCompany: (comp: Omit<Company, 'id' | 'createdAt'>) => void;
   onUpdateCompany: (id: string, updates: Partial<Company>) => void;
   onDeleteCompany: (id: string) => void;
   onAddProduct: (prod: Omit<Product, 'id'>) => void;
   onDeleteProduct: (id: string) => void;
   onAddAuditLog: (action: string, details: string) => void;
+  onUpdateUserProfile?: (userId: string, updates: Partial<UserProfile>) => void;
 }
 
 export default function AdminDashboard({
@@ -52,14 +55,16 @@ export default function AdminDashboard({
   auditLogs,
   transactions,
   wallets,
+  users = [],
   onAddCompany,
   onUpdateCompany,
   onDeleteCompany,
   onAddProduct,
   onDeleteProduct,
-  onAddAuditLog
+  onAddAuditLog,
+  onUpdateUserProfile
 }: AdminDashboardProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'tenants' | 'audit' | 'inventory' | 'reports'>('tenants');
+  const [activeSubTab, setActiveSubTab] = useState<'tenants' | 'audit' | 'inventory' | 'reports' | 'moderation'>('tenants');
   
   // New tenant state
   const [newCompName, setNewCompName] = useState('');
@@ -250,6 +255,13 @@ export default function AdminDashboard({
             className={`px-3 py-1.5 font-bold rounded transition-colors ${activeSubTab === 'reports' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Compilador Reportes
+          </button>
+          <button
+            id="admin-subtab-moderation"
+            onClick={() => setActiveSubTab('moderation')}
+            className={`px-3 py-1.5 font-bold rounded transition-colors ${activeSubTab === 'moderation' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+          >
+            🎯 Moderación KYC & RBAC
           </button>
         </div>
       </div>
@@ -542,6 +554,269 @@ export default function AdminDashboard({
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* SUBTAB 5: MODERACIÓN KYC & RBAC CRÍTICA */}
+      {activeSubTab === 'moderation' && (
+        <div className="space-y-6 animate-fadeIn">
+          
+          <div className="bg-indigo-950 text-white p-5 rounded-2xl border border-indigo-900 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h3 className="text-sm font-mono font-bold text-indigo-300 uppercase animate-pulse">Consola de Control de Cumplimiento</h3>
+              <h2 className="text-lg font-bold">Mesa de Validación KYC & Control de Roles (RBAC)</h2>
+              <p className="text-xs text-indigo-200 mt-1">Supervisa solicitudes biométricas, asigna Sellos oficiales de Trust y gestiona perfiles de usuarios bloqueados.</p>
+            </div>
+            
+            <div className="px-4 py-2 bg-indigo-900/50 border border-indigo-800 rounded-xl text-center">
+              <span className="text-[10px] text-indigo-300 block uppercase font-bold text-indigo-200">Inquilinos en Monitoreo</span>
+              <strong className="text-sm font-mono text-emerald-400">{users.length} Cuentas Activadas</strong>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            
+            {/* LARGE COLUMN: MAIN USERS DIRECTORY FOR KYC & SECURITY CONTROLS */}
+            <div className="xl:col-span-2 space-y-4">
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                
+                <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                  <h4 className="font-bold text-slate-805 text-xs uppercase tracking-wider">Padrón de Usuarios y Estado de KYC</h4>
+                  <span className="text-[10px] text-slate-400 font-medium">Bajo Modelo Zero Trust</span>
+                </div>
+
+                <div className="overflow-x-auto text-xs text-slate-705">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-100 text-[9.5px] uppercase font-bold text-slate-450 tracking-wider">
+                        <th className="py-2.5">Usuario / ID</th>
+                        <th className="py-2.5">Rol / Sector</th>
+                        <th className="py-2.5">Nivel KYC</th>
+                        <th className="py-2.5">Seguridad MFA</th>
+                        <th className="py-2.5 text-right">Controles Operativos</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-sans">
+                      {users.map(u => {
+                        const statusColor = u.verifLevel === 3 
+                          ? 'bg-purple-100 text-purple-850 border-purple-200' 
+                          : u.verifLevel === 2 
+                          ? 'bg-emerald-100 text-emerald-850 border-emerald-200' 
+                          : 'bg-amber-100 text-amber-850 border-amber-200';
+                        
+                        return (
+                          <tr key={u.id} className="hover:bg-slate-50/50 group transition-colors">
+                            <td className="py-3">
+                              <div className="flex items-center gap-2.5">
+                                <img
+                                  src={u.avatar}
+                                  alt={u.name}
+                                  referrerPolicy="no-referrer"
+                                  className="w-8.5 h-8.5 rounded-full object-cover border border-slate-200"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-1">
+                                    <strong className="text-slate-900 font-semibold">{u.name}</strong>
+                                    {u.isAccountBlocked && (
+                                      <span className="px-1 py-0.2 bg-rose-105 text-rose-800 border border-rose-200 rounded text-[8px] uppercase font-bold">BLOQUEADO</span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] font-mono text-slate-400 block">{u.email}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <span className="px-2 py-0.5 bg-slate-105 border border-slate-200 text-slate-750 rounded text-[9.5px] font-mono font-bold uppercase block w-max">
+                                {u.role}
+                              </span>
+                              {u.kycDetails?.specificSectors && u.kycDetails.specificSectors.length > 0 && (
+                                <span className="text-[9px] text-indigo-600 font-extrabold uppercase mt-1 block">
+                                  Habilitado: {u.kycDetails.specificSectors.join(', ')}
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3">
+                              <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border ${statusColor}`}>
+                                Nivel {u.verifLevel || 1}
+                              </span>
+                            </td>
+                            <td className="py-3 font-mono text-[10px]">
+                              {u.isMfaEnabled ? (
+                                <span className="text-emerald-600 font-extrabold">🟢 ACTIVO ({u.mfaType?.toUpperCase()})</span>
+                              ) : (
+                                <span className="text-slate-400">🔴 DESACTIVADO</span>
+                              )}
+                            </td>
+                            <td className="py-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5 opacity-90 group-hover:opacity-100">
+                                
+                                {/* Promote button */}
+                                {u.verifLevel !== 3 && (
+                                  <button
+                                    onClick={() => {
+                                      const nextLevel = (u.verifLevel || 1) === 1 ? 2 : 3;
+                                      const defaultBadges = nextLevel === 2 
+                                        ? ['🟢 Usuario Verificado'] 
+                                        : ['🟢 Usuario Verificado', '🔵 Empresa Verificada', '🟣 KYC Completo'];
+                                      
+                                      onUpdateUserProfile?.(u.id, { 
+                                        verifLevel: nextLevel as any,
+                                        sellos: defaultBadges,
+                                        kycDetails: { status: 'verified' }
+                                      });
+                                      
+                                      onAddAuditLog('Aprobación KYC Admin', `Administrador promovió manualmente a ${u.name} (ID: ${u.id}) al KYC Nivel ${nextLevel}.`);
+                                      alert(`Se ha promovido a ${u.name} al Nivel ${nextLevel} de forma manual con Sellos oficiales.`);
+                                    }}
+                                    className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded text-[9.5px] uppercase border border-indigo-100 transition-all"
+                                    title="Aprobar / Elevar KYC Nivel"
+                                  >
+                                    Promover Nivel
+                                  </button>
+                                )}
+
+                                {/* Block/Unblock Button */}
+                                <button
+                                  onClick={() => {
+                                    const nextState = !u.isAccountBlocked;
+                                    onUpdateUserProfile?.(u.id, { isAccountBlocked: nextState });
+                                    onAddAuditLog(
+                                      nextState ? 'Baneo de Cuenta' : 'Activación Cuenta',
+                                      `Super Admin cambió estado de cuenta de ${u.name} (ID: ${u.id}) a ${nextState ? 'BLOQUEADO' : 'ACTIVO'} por políticas de cumplimiento.`
+                                    );
+                                    alert(`Cuenta de ${u.name} ha sido ${nextState ? 'BLOQUEADA' : 'DESBLOQUEADA'} en el Sandbox.`);
+                                  }}
+                                  className={`px-2 py-1 font-bold rounded text-[9.5px] uppercase border transition-all ${
+                                    u.isAccountBlocked
+                                      ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-100'
+                                      : 'bg-rose-50 hover:bg-rose-100 text-rose-705 border-rose-150'
+                                  }`}
+                                >
+                                  {u.isAccountBlocked ? 'Desbloquear' : 'Bloquear'}
+                                </button>
+
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-[11px] text-slate-500 leading-relaxed">
+                  <span className="font-bold text-slate-700 block font-mono text-[10px] uppercase text-indigo-900">Guía de Moderación KYC en Sandbox:</span>
+                  <p>Puedes simular la inspección manual de documentos y la toma biométrica. Al hacer clic en "Promover" se le asignan inmediatamente al usuario los sellos corporativos, omitiendo las 48 horas habituales de validación de la pasarela de cumplimiento de Sinergia Connect.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTOR PERMISSIONS OVERVIEW MATRIX (RIGHT SIDEBAR) */}
+            <div className="space-y-6">
+              
+              {/* Trust Badge Custom Installer Console */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Award className="w-5 h-5 text-indigo-600 animate-pulse" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-705">Administrador de Sellos (Badges)</h4>
+                </div>
+
+                <p className="text-[11px] text-slate-500 leading-relaxed font-sans font-medium">
+                  Modela directamente qué insignias visuales se asocian de forma dinámica a cada perfil empresarial para potenciar la confianza en la matriz multi-sectorial.
+                </p>
+
+                <div className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="block text-[9.5px] uppercase font-bold text-slate-455 mb-1 text-slate-500">Elegir Usuario Destinatario:</label>
+                    <select
+                      id="sello-target-user-select"
+                      className="w-full border p-2 rounded bg-slate-50 focus:bg-white focus:outline-none font-sans"
+                    >
+                      {users.map(u => (
+                        <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[9.5px] uppercase font-bold text-slate-455 mb-1 text-slate-500">Insignia Oficial a Otorgar:</label>
+                    <select
+                      id="sello-badge-type-select"
+                      className="w-full border p-2 rounded bg-slate-50 focus:bg-white focus:outline-none font-sans"
+                    >
+                      <option value="🟢 Usuario Verificado">🟢 Usuario Verificado</option>
+                      <option value="🔵 Empresa Verificada">🔵 Empresa Verificada</option>
+                      <option value="🟣 KYC Completo">🟣 KYC Completo</option>
+                      <option value="🟡 Negocio Destacado">🟡 Negocio Destacado (Outstanding)</option>
+                      <option value="⭐ Premium">⭐ Membresía Premium Sinergia</option>
+                      <option value="🏆 Aliado Estratégico Sinergia">🏆 Aliado Estratégico Sinergia</option>
+                      <option value="🏢 Aliado Inmobiliario">🏢 Aliado Inmobiliario</option>
+                      <option value="🚚 Flota Autorizada">🚚 Flota Autorizada</option>
+                      <option value="🏨 Hotel de Confianza">🏨 Hotel de Confianza</option>
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const userSel = document.getElementById('sello-target-user-select') as HTMLSelectElement;
+                      const badgeSel = document.getElementById('sello-badge-type-select') as HTMLSelectElement;
+                      if (userSel && badgeSel) {
+                        const targetUser = users.find(u => u.id === userSel.value);
+                        if (targetUser) {
+                          const currentBadges = targetUser.sellos || [];
+                          if (currentBadges.includes(badgeSel.value)) {
+                            alert('El usuario ya cuenta con ese sello.');
+                            return;
+                          }
+                          const nextBadges = [...currentBadges, badgeSel.value];
+                          onUpdateUserProfile?.(targetUser.id, { sellos: nextBadges });
+                          onAddAuditLog('Concesión Sello Confianza', `Se otorgó de forma directa el sello "${badgeSel.value}" a la cuenta de ${targetUser.name}.`);
+                          alert(`¡Sello "${badgeSel.value}" asignado con éxito a ${targetUser.name}!`);
+                        }
+                      }
+                    }}
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold uppercase text-[10px] tracking-wider transition-colors"
+                  >
+                    Asignar Sello Oficial
+                  </button>
+                </div>
+              </div>
+
+              {/* RBAC MATRIX BOARD */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-105 pb-3">
+                  <FolderLock className="w-4.5 h-4.5 text-indigo-600" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">Matriz de Privilegios RBAC & KYC</h4>
+                </div>
+
+                <div className="text-[10px] text-slate-500 leading-relaxed space-y-2.5 font-sans font-medium">
+                  <p className="font-semibold text-slate-705">En Sinergia Connect rige el principio del menor privilegio:</p>
+                  
+                  <div className="space-y-2 font-mono text-[9px]">
+                    <div className="p-2 bg-slate-50 border rounded-lg flex justify-between items-center bg-slate-100">
+                      <span>Nivel 1 (Invitado):</span>
+                      <span className="text-rose-600 font-extrabold uppercase">SOLO LECTURA</span>
+                    </div>
+                    <div className="p-2 bg-slate-50 border rounded-lg flex justify-between items-center bg-slate-100">
+                      <span>Nivel 2 (Verificado):</span>
+                      <span className="text-emerald-750 font-extrabold uppercase">CONTRATACIONES / Módulo Compra</span>
+                    </div>
+                    <div className="p-2 bg-slate-50 border rounded-lg flex justify-between items-center bg-slate-100">
+                      <span>Nivel 3 (KYC Corporativo):</span>
+                      <span className="text-indigo-700 font-extrabold uppercase">PUBLICAR / VENDER / COBRAR</span>
+                    </div>
+                  </div>
+
+                  <p className="border-t pt-2 text-[9px] italic text-rose-600/95 font-medium leading-relaxed">
+                    ⚠️ Restricción Mandatoria Activa: Si un inquilino no es verificado, se le restringe el acceso a la creación de productos y a la edición de fletes de logística pesada de forma inmediata.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
       )}
 

@@ -20,6 +20,10 @@ import {
   Search,
   Lock,
   PlusCircle,
+  Smartphone,
+  QrCode,
+  Award,
+  AlertTriangle,
   HelpCircle as QuestionIcon
 } from 'lucide-react';
 
@@ -34,6 +38,8 @@ interface OnboardingProps {
   ) => void;
   onSwitchSession: (userId: string) => void;
   onLogout: () => void;
+  onUpdateUserProfile: (userId: string, updates: Partial<UserProfile>) => void;
+  onAddAuditLog: (action: string, details: string) => void;
 }
 
 export default function OnboardingModule({
@@ -43,10 +49,62 @@ export default function OnboardingModule({
   currentUser,
   onRegisterUser,
   onSwitchSession,
-  onLogout
+  onLogout,
+  onUpdateUserProfile,
+  onAddAuditLog
 }: OnboardingProps) {
   // Tabs within Onboarding
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'accounts'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'accounts' | 'security_kyc'>('login');
+
+  // Security Local State Models
+  const [mfaTypeSelect, setMfaTypeSelect] = useState<'sms' | 'email' | 'totp' | 'none'>(currentUser.mfaType || 'none');
+  const [totpSimCodeInput, setTotpSimCodeInput] = useState('');
+  const [mfaSuccessMsg, setMfaSuccessMsg] = useState('');
+  
+  // KYC Level 2 Simulation States
+  const [idNumberInput, setIdNumberInput] = useState(currentUser.documentId || '');
+  const [selfieMockFile, setSelfieMockFile] = useState<string | null>(currentUser.kycDetails?.selfieUrl || null);
+  const [docFrontMockFile, setDocFrontMockFile] = useState<string | null>(currentUser.kycDetails?.docFrontUrl || null);
+  const [docBackMockFile, setDocBackMockFile] = useState<string | null>(currentUser.kycDetails?.docBackUrl || null);
+  const [kycUpgradeStatus, setKycUpgradeStatus] = useState<'idle' | 'analyzing' | 'success'>('idle');
+
+  // KYC Level 3 (Sector vertical) States
+  const [sectorKycSelect, setSectorKycSelect] = useState<'general' | 'inmobiliaria' | 'transporte' | 'hotelero' | 'turismo'>('general');
+  const [razonSocialInput, setRazonSocialInput] = useState('');
+  const [nitInput, setNitInput] = useState('');
+  const [camaraComercioFile, setCamaraComercioFile] = useState<boolean>(false);
+  const [propertyCardInput, setPropertyCardInput] = useState('');
+  const [driverLicenseInput, setDriverLicenseInput] = useState('');
+  const [soatInput, setSoatInput] = useState('');
+  const [rntLicenseInput, setRntLicenseInput] = useState('');
+  const [escrituraInput, setEscrituraInput] = useState('');
+  const [certificadoTradicionInput, setCertificadoTradicionInput] = useState('');
+  const [level3Status, setLevel3Status] = useState<'idle' | 'submitting' | 'success'>('idle');
+
+  // Anti-fraud dynamic scanning signals
+  const [antiFraudWarning, setAntiFraudWarning] = useState<string | null>(null);
+  const [phoneInputAlert, setPhoneInputAlert] = useState<string | null>(null);
+
+  // Helper to trace dynamic anti-fraud rules
+  const handleEmailAntiFraudScan = (val: string) => {
+    const temporalEmails = ['tempmail.com', 'yopmail.com', 'guerrillamail.com', 'temp-mail.org', 'dispostable.com', 'mailinator.com', 'sharklasers.com'];
+    const domain = val.split('@')[1];
+    if (domain && temporalEmails.includes(domain.toLowerCase())) {
+      setAntiFraudWarning('ALERTA ANTIFRAUDE: Correo electrónico temporal o desechable detectado. Esta cuenta podría ser suspendida por riesgo de fraude.');
+    } else {
+      setAntiFraudWarning(null);
+    }
+  };
+
+  const handlePhoneAntiFraudScan = (val: string) => {
+    const virtualPrefixes = ['+1252', '+1201', '+4470']; // mockup simulator VoIP prefixes
+    const cleanPhone = val.trim();
+    if (virtualPrefixes.some(pref => cleanPhone.startsWith(pref))) {
+      setPhoneInputAlert('ALERTA ANTIFRAUDE: Prefijo número de teléfono virtual VoIP detectado. Se requiere validación biométrica facial mandatoria.');
+    } else {
+      setPhoneInputAlert(null);
+    }
+  };
 
   // Login Form State
   const [loginEmail, setLoginEmail] = useState('');
@@ -255,6 +313,16 @@ export default function OnboardingModule({
           >
             <Users className="w-3.5 h-3.5" />
             Directorio ({users.length})
+          </button>
+
+          <button
+            onClick={() => setActiveTab('security_kyc')}
+            className={`flex-1 lg:flex-none px-4 py-2 font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+              activeTab === 'security_kyc' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Fingerprint className="w-3.5 h-3.5 text-indigo-600" />
+            Control de Seguridad & KYC
           </button>
         </div>
       </div>
@@ -684,6 +752,666 @@ export default function OnboardingModule({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* TAB 4: CONTROL DE SEGURIDAD, MFA, ANTIFRAUDE Y KYC INTEGRADO */}
+      {activeTab === 'security_kyc' && (
+        <div className="space-y-6 text-slate-800 animate-fadeIn select-none">
+          
+          {/* Header Banner */}
+          <div className="bg-slate-900 text-white p-6 rounded-2xl border border-slate-800 relative overflow-hidden shadow-md">
+            <div className="absolute top-0 right-0 p-8 transform translate-x-12 -translate-y-12 bg-indigo-500/10 rounded-full w-48 h-48 blur-2xl pointer-events-none"></div>
+            <div className="flex items-center gap-3 relative z-10">
+              <span className="p-2.5 bg-indigo-600/30 border border-indigo-500/35 rounded-xl text-indigo-400">
+                <Fingerprint className="w-6 h-6 animate-pulse" />
+              </span>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-indigo-400 font-mono">Consola Zero Trust</h3>
+                <h2 className="text-lg font-bold">Autenticación Segura & Cumplimiento KYC</h2>
+                <p className="text-[11px] text-slate-400 mt-0.5">Valida tu identidad, protege tu monedero con MFA y activa tus sellos oficiales de confianza.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* COLUMN 1: CURRENT STATUS & TRUST BADGES & MFA TUNE */}
+            <div className="lg:col-span-1 space-y-6">
+              
+              {/* Card 1: Reputation and trust badges */}
+              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Award className="w-5 h-5 text-indigo-600" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">Estado de Confianza</h4>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nivel Actual Sinergia:</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${
+                        currentUser.verifLevel === 3
+                          ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                          : currentUser.verifLevel === 2
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200'
+                      }`}>
+                        Nivel {currentUser.verifLevel || 1}: {
+                          currentUser.verifLevel === 3 ? 'KYC Completo' : currentUser.verifLevel === 2 ? 'Usuario Verificado' : 'Invitado'
+                        }
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Sellos de Confianza Activos:</span>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {currentUser.sellos && currentUser.sellos.length > 0 ? (
+                        currentUser.sellos.map((sello, idx) => (
+                          <span key={idx} className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-bold text-slate-700 flex items-center gap-1">
+                            {sello}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-[10px] italic text-slate-400">Ninguno. Por favor completa la verificación biométrica para activar tus primeros sellos.</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => {
+                        onUpdateUserProfile(currentUser.id, { verifLevel: 1, sellos: [], documentId: undefined, isMfaEnabled: false, mfaType: 'none', kycDetails: undefined });
+                        setMfaTypeSelect('none');
+                        setKycUpgradeStatus('idle');
+                        setLevel3Status('idle');
+                        onAddAuditLog('Restablecimiento de Credenciales', `El usuario ${currentUser.name} ha restablecido su perfil de KYC a nivel Invitado para simulación.`);
+                      }}
+                      className="w-full text-center py-1 text-[9.5px] font-black text-rose-600 uppercase border border-rose-100 bg-rose-50/30 rounded-lg hover:bg-rose-50 transition-colors"
+                    >
+                      🔄 Resetear Nivel para Simulación
+                    </button>
+                    <p className="text-[8.5px] text-slate-400 text-center mt-1">Te permite probar el flujo completo desde el Nivel 1.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: MFA Switchboard */}
+              <div className="p-5 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                  <Lock className="w-4 h-4 text-indigo-600" />
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">Autenticación Multifactor</h4>
+                </div>
+
+                <div className="space-y-3.5 text-xs">
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Elegir Canal de Segundo Factor:</label>
+                    <select
+                      value={mfaTypeSelect}
+                      onChange={(e) => {
+                        const val = e.target.value as any;
+                        setMfaTypeSelect(val);
+                        setMfaSuccessMsg('');
+                      }}
+                      className="w-full border border-slate-200 p-2 rounded-lg bg-slate-50 focus:bg-white text-xs focus:outline-none"
+                    >
+                      <option value="none">Ninguno (No recomendado - Zero Trust Desactivado)</option>
+                      <option value="email">OTP por Correo Electrónico Registrado</option>
+                      <option value="sms">OTP por Mensajería de Texto (SMS)</option>
+                      <option value="totp">Código Rotativo Autenticador (TOTP App)</option>
+                    </select>
+                  </div>
+
+                  {mfaTypeSelect === 'totp' && (
+                    <div className="space-y-3.5 p-3.5 bg-indigo-50/50 border border-indigo-100 rounded-xl">
+                      <div className="flex gap-2 items-start">
+                        <span className="p-1 px-1.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-black">TOTP</span>
+                        <div className="text-[10px] text-indigo-950 font-medium leading-relaxed">
+                          Escanea el código QR con Google Authenticator o Microsoft Authenticator:
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-center justify-center py-2 bg-white rounded-lg border border-indigo-100 max-w-[120px] mx-auto">
+                        <QrCode className="w-20 h-20 text-slate-800" />
+                        <span className="text-[8.5px] font-mono text-slate-400 mt-1 uppercase">Clave Secret</span>
+                      </div>
+
+                      <div className="text-center font-mono text-[9px] select-all bg-emerald-50 text-emerald-800 p-1 border border-emerald-100 rounded">
+                        SINERGIA-SECURE-KEY-MFA
+                      </div>
+
+                      <div>
+                        <label className="block text-[9px] uppercase font-extrabold text-slate-505 mb-1">Ingresa el código temporal de 6 dígitos:</label>
+                        <input
+                          type="text"
+                          placeholder="123456"
+                          value={totpSimCodeInput}
+                          maxLength={6}
+                          onChange={(e) => setTotpSimCodeInput(e.target.value)}
+                          className="w-full border border-slate-200 p-1.5 rounded text-center tracking-[0.25em] font-mono font-bold text-xs bg-white text-slate-800 outline-none"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (totpSimCodeInput.length === 6) {
+                            onUpdateUserProfile(currentUser.id, { isMfaEnabled: true, mfaType: 'totp', mfaSecret: 'SINERGIACONNECT-AUTH-KEY-XYZ' });
+                            setMfaSuccessMsg('✅ Autenticación multifactor TOTP configurada con éxito.');
+                            onAddAuditLog('Vinculación MFA exitosa', `El usuario del sistema activó el token de autenticación TOTP de forma segura.`);
+                          } else {
+                            alert('Introduce un código de 6 números.');
+                          }
+                        }}
+                        className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold uppercase transition-colors"
+                      >
+                        Verificar e Iniciar TOTP
+                      </button>
+                    </div>
+                  )}
+
+                  {(mfaTypeSelect === 'email' || mfaTypeSelect === 'sms') && (
+                    <div className="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        {mfaTypeSelect === 'email' 
+                          ? `Enviaremos un token OTP de un solo uso a tu correo electrónico: **${currentUser.email}**.`
+                          : `Enviaremos un token OTP vía SMS a tu número de contacto registrado.`
+                        }
+                      </p>
+
+                      {mfaTypeSelect === 'sms' && (
+                        <div className="space-y-1">
+                          <label className="block text-[9px] font-bold text-slate-500 uppercase">Número telefónico celular:</label>
+                          <input
+                            type="text"
+                            placeholder="+57 321 000 0000"
+                            defaultValue={currentUser.phone || ''}
+                            onChange={(e) => handlePhoneAntiFraudScan(e.target.value)}
+                            className="w-full border p-1 rounded font-mono text-xs focus:outline-none"
+                          />
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          onUpdateUserProfile(currentUser.id, { isMfaEnabled: true, mfaType: mfaTypeSelect });
+                          setMfaSuccessMsg(`✅ Segundo factor de autenticación por ${mfaTypeSelect === 'email' ? 'Correo' : 'SMS'} activado.`);
+                          onAddAuditLog('Activación MFA', `El usuario ${currentUser.name} activó MFA mediante canal ${mfaTypeSelect}.`);
+                        }}
+                        className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold uppercase transition-colors"
+                      >
+                        Activar MFA por {mfaTypeSelect.toUpperCase()}
+                      </button>
+                    </div>
+                  )}
+
+                  {mfaSuccessMsg && (
+                    <div className="p-3 bg-emerald-50 text-emerald-850 rounded-lg text-[10px] border border-emerald-100 font-bold">
+                      {mfaSuccessMsg}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* COLUMN 2 & 3: MAIN DYNAMIC KYC VERIFIER PANEL */}
+            <div className="lg:col-span-2 space-y-6">
+              
+              {/* Anti-Fraud Sandbox Monitor Block */}
+              {(antiFraudWarning || phoneInputAlert) && (
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex gap-3 text-xs text-rose-900 animate-pulse">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <div>
+                    <h4 className="font-extrabold uppercase text-[10px] text-rose-800">Alerta Antifraude Sinergia Shield</h4>
+                    <p className="mt-1 leading-relaxed font-medium">
+                      {antiFraudWarning} {phoneInputAlert}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* LEVEL 2: BIOMETRIC PASSPORT / IDENTITY SCAN */}
+              {(!currentUser.verifLevel || currentUser.verifLevel === 1) && (
+                <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-6">
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <span className="p-1 px-2 text-[10px] font-mono font-black uppercase text-indigo-700 bg-indigo-50 rounded">Fase 1</span>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-800">Nivel 2: Verificación de Identidad Biométrica (Persona Natural)</h4>
+                  </div>
+
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                    Sinergia Connect opera bajo un esquema **Zero Trust**. Para poder comprar en el Mercado, solicitar fletes de logística o contratar profesionales calificados, debes elevar tu identidad digital al Nivel 2 mediante validación de documento legal y biometría facial anti-suplantación.
+                  </p>
+
+                  <div className="space-y-4 text-xs font-sans">
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-slate-550 mb-1">Número de Cédula de Ciudadanía Colombiana (o ID legal):</label>
+                      <input
+                        type="text"
+                        placeholder="Ej. CC 10203045"
+                        value={idNumberInput}
+                        onChange={(e) => setIdNumberInput(e.target.value)}
+                        className="w-full border border-slate-200 p-2.5 rounded-lg bg-slate-50 focus:bg-white focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      
+                      {/* Document photo capture simulator */}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                        <span className="text-[9.5px] uppercase font-bold text-indigo-805 block">1. Documento de Identidad (Anverso + Reverso)</span>
+                        
+                        <div className="border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-4 bg-white text-center cursor-pointer min-h-[110px]"
+                          onClick={() => {
+                            setDocFrontMockFile('https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=300');
+                            onAddAuditLog('Captura documento identidad', 'Captura simulada de anverso del documento.');
+                          }}
+                        >
+                          {docFrontMockFile ? (
+                            <div className="text-center font-bold text-emerald-800">
+                              <CheckCircle className="w-6 h-6 mx-auto text-emerald-600 mb-1" />
+                              <span className="text-[9.5px]">¡Anverso Cargado Correctamente!</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <Smartphone className="w-6 h-6 mx-auto text-slate-400 mb-1" />
+                              <span className="text-[9.5px] font-bold text-slate-500 block">Simular Carga de Cédula</span>
+                              <span className="text-[8.5px] text-slate-400 mt-0.5 block">Haz clic para capturar foto</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Selfie capture simulator */}
+                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                        <span className="text-[9.5px] uppercase font-bold text-indigo-805 block">2. Validación Biométrica Facial (Selfie)</span>
+                        
+                        <div className="border border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center p-4 bg-white text-center cursor-pointer min-h-[110px]"
+                          onClick={() => {
+                            setSelfieMockFile('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300');
+                            onAddAuditLog('Captura Facial Biométrica', 'Captura simulada de selfie anti-suplantación.');
+                          }}
+                        >
+                          {selfieMockFile ? (
+                            <div className="text-center font-bold text-emerald-800">
+                              <CheckCircle className="w-6 h-6 mx-auto text-emerald-600 mb-1" />
+                              <span className="text-[9.5px]">¡Facial Facial Biométrico OK!</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <Fingerprint className="w-6 h-6 mx-auto text-slate-400 mb-1" />
+                              <span className="text-[9.5px] font-bold text-slate-500 block">Simular Captura Facial Frontal</span>
+                              <span className="text-[8.5px] text-slate-400 mt-0.5 block">Haz clic para simular cámara</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {kycUpgradeStatus === 'analyzing' && (
+                      <div className="space-y-2 p-4 bg-slate-950 text-emerald-450 rounded-xl font-mono text-[9.5px] border border-slate-800">
+                        <div className="flex justify-between font-bold">
+                          <span>🔬 ANALIZADOR ANTIFRAUDE SINERGIA:</span>
+                          <span className="animate-pulse">PROCESANDO...</span>
+                        </div>
+                        <p className="text-slate-400">• Extrayendo metadatos de documento legal OCR...</p>
+                        <p className="text-slate-400">• Cruzando registros de identidad colombiana...</p>
+                        <p className="text-slate-400">• Validando selfie de usuario contra plantilla de documento...</p>
+                        <p className="text-slate-200">• Matriz de liveness facial completa: PASSED (99.8%)</p>
+                        <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2">
+                          <div className="bg-emerald-500 h-1.5 rounded-full animate-barProgress"></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {kycUpgradeStatus === 'success' && (
+                      <div className="p-4 bg-emerald-50 text-emerald-950 rounded-xl border border-emerald-200 space-y-1">
+                        <p className="font-extrabold text-[11px] uppercase tracking-wide text-emerald-800 flex items-center gap-1">
+                          <CheckCircle className="w-4 h-4" /> ¡Identidad Elevada a Nivel 2!
+                        </p>
+                        <p className="text-[10px] leading-relaxed">
+                          La validación biométrica se ha completado con éxito. Se te ha asignado el sello de **🟢 Usuario Verificado** y tu billetera ha recibido su respectiva actualización de políticas.
+                        </p>
+                      </div>
+                    )}
+
+                    {kycUpgradeStatus === 'idle' && (
+                      <button
+                        onClick={() => {
+                          if (!idNumberInput.trim()) {
+                            alert('Introduce tu número de identificación legal.');
+                            return;
+                          }
+                          if (!docFrontMockFile || !selfieMockFile) {
+                            alert('Debes simular la carga/captura de la cédula y la selfie haciendo clic en cada recuadro.');
+                            return;
+                          }
+
+                          setKycUpgradeStatus('analyzing');
+                          setTimeout(() => {
+                            setKycUpgradeStatus('success');
+                            onUpdateUserProfile(currentUser.id, {
+                              verifLevel: 2,
+                              documentId: idNumberInput,
+                              sellos: ['🟢 Usuario Verificado'],
+                              kycDetails: {
+                                status: 'verified',
+                                selfieUrl: selfieMockFile,
+                                docFrontUrl: docFrontMockFile,
+                                submittedAt: new Date().toISOString()
+                              }
+                            });
+                            onAddAuditLog('Promoción a Nivel 2', `Usuario ${currentUser.name} completó biometría facial e ID: ${idNumberInput}. Sello otorgado.`);
+                          }, 2500);
+                        }}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase transition-colors tracking-widest text-[10.5px]"
+                      >
+                        Iniciar Verificación de Identidad Biométrica
+                      </button>
+                    )}
+
+                  </div>
+                </div>
+              )}
+
+              {/* LEVEL 3: SECTOR VERIFICATION LOGIC */}
+              {currentUser.verifLevel === 2 && (
+                <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-xs space-y-6">
+                  
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <span className="p-1 px-2 text-[10px] font-mono font-black uppercase text-purple-700 bg-purple-50 rounded">Fase 2</span>
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-slate-850">Nivel 3: Verificación Corporativa & Especialidades Sectoriales</h4>
+                  </div>
+
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                    **¡Felicidades, eres un Usuario Verificado!** Para poder vender productos en el Marketplace, publicar inmuebles, registrar vehículos de carga en Transporte, o rentar residencias en Hotelería, debes habilitar tu habilitación sectorial de Nivel 3.
+                  </p>
+
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                    <label className="block text-[10.5px] uppercase font-extrabold text-slate-600">Seleccione tu Sector Vertical Destino:</label>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px] font-bold">
+                      {(['general', 'inmobiliaria', 'transporte', 'hotelero', 'turismo'] as const).map(sect => (
+                        <button
+                          key={sect}
+                          onClick={() => setSectorKycSelect(sect)}
+                          type="button"
+                          className={`p-2 border rounded-lg uppercase tracking-wider text-center cursor-pointer transition-colors ${
+                            sectorKycSelect === sect
+                              ? 'bg-purple-600 text-white border-purple-750 font-black'
+                              : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                          }`}
+                        >
+                          {sect === 'general' ? 'General' : sect}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!nitInput.trim() || !razonSocialInput.trim()) {
+                      alert('Digita el NIT y la Razón Social de tu negocio.');
+                      return;
+                    }
+
+                    // Enforce rule inputs
+                    if (sectorKycSelect === 'hotelero' && !rntLicenseInput.trim()) {
+                      alert('El Registro Nacional de Turismo (RNT) es obligatorio para Hotelería.');
+                      return;
+                    }
+                    if (sectorKycSelect === 'turismo' && !rntLicenseInput.trim()) {
+                      alert('El RNT es obligatorio para Operadores Turísticos.');
+                      return;
+                    }
+                    if (sectorKycSelect === 'transporte' && (!driverLicenseInput.trim() || !soatInput.trim())) {
+                      alert('La licencia y el SOAT son obligatorios para Transporte de Carga.');
+                      return;
+                    }
+                    if (sectorKycSelect === 'inmobiliaria' && (!escrituraInput.trim() || !certificadoTradicionInput.trim())) {
+                      alert('La escritura y el certificado son obligatorios para publicar Inmuebles.');
+                      return;
+                    }
+
+                    setLevel3Status('submitting');
+                    
+                    setTimeout(() => {
+                      setLevel3Status('success');
+                      
+                      // Promote User to Level 3 and add sector tags
+                      const initialSellos = ['🟢 Usuario Verificado', '🔵 Empresa Verificada', '🟣 KYC Completo'];
+                      if (sectorKycSelect === 'inmobiliaria') initialSellos.push('🏢 Aliado Inmobiliario');
+                      if (sectorKycSelect === 'transporte') initialSellos.push('🚚 Flota Autorizada');
+                      if (sectorKycSelect === 'hotelero') initialSellos.push('🏨 Hotel de Confianza');
+                      if (sectorKycSelect === 'turismo') initialSellos.push('🎒 Guía Certificado');
+
+                      onUpdateUserProfile(currentUser.id, {
+                        verifLevel: 3,
+                        sellos: initialSellos,
+                        kycDetails: {
+                          ...currentUser.kycDetails,
+                          status: 'verified',
+                          razonSocial: razonSocialInput,
+                          nit: nitInput,
+                          soat: soatInput || undefined,
+                          licenciaConducir: driverLicenseInput || undefined,
+                          tarjetaPropiedad: propertyCardInput || undefined,
+                          rnt: rntLicenseInput || undefined,
+                          escrituraUrl: escrituraInput || undefined,
+                          certificadoTradicionUrl: certificadoTradicionInput || undefined,
+                          specificSectors: [sectorKycSelect === 'general' ? 'inmobiliaria' : sectorKycSelect as any]
+                        }
+                      });
+
+                      onAddAuditLog('Promoción Corporativa Nivel 3', `Empresa promovida a Nivel 3. NIT: ${nitInput}, Razón Social: ${razonSocialInput}. Sector habilitado: ${sectorKycSelect}.`);
+                    }, 2000);
+
+                  }} className="space-y-4 text-xs font-sans">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Razón Social Jurídica:</label>
+                        <input
+                          type="text"
+                          placeholder="Sinergia Commercial S.A.S"
+                          value={razonSocialInput}
+                          onChange={(e) => setRazonSocialInput(e.target.value)}
+                          className="w-full border border-slate-200 p-2 rounded focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">NIT Comercial / RUT Empresa:</label>
+                        <input
+                          type="text"
+                          placeholder="Ej. 901.222.111-9"
+                          value={nitInput}
+                          onChange={(e) => setNitInput(e.target.value)}
+                          className="w-full border border-slate-200 p-2 rounded focus:outline-none font-mono"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Sector dependent uploads details */}
+                    {sectorKycSelect === 'general' && (
+                      <div className="p-4 bg-purple-50/40 border border-purple-100 rounded-xl space-y-2">
+                        <span className="text-[10px] uppercase font-black text-purple-800">Requerimiento General:</span>
+                        <p className="text-[11px] text-slate-500">Cargar tu RUT y Cámara de Comercio (formato PDF certificado, vigencia menor a 30 días).</p>
+                        <button
+                          type="button"
+                          onClick={() => setCamaraComercioFile(true)}
+                          className="px-3 py-1 bg-white border border-slate-200 text-slate-700 font-bold text-[10px] rounded hover:bg-slate-50"
+                        >
+                          {camaraComercioFile ? '✅ camara_comercio.pdf Adjuntado' : '📎 Subir Certificado PDF'}
+                        </button>
+                      </div>
+                    )}
+
+                    {sectorKycSelect === 'inmobiliaria' && (
+                      <div className="p-4 bg-purple-50/45 border border-purple-150 rounded-xl space-y-3">
+                        <span className="text-[10px] uppercase font-black text-purple-800">Prerrequisito Inmobiliaria:</span>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          La publicación de inmuebles (venta/arriendo) exige la escritura de propiedad y el certificado de libertad actual.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-600">Número de Escritura Pública:</label>
+                            <input
+                              type="text"
+                              value={escrituraInput}
+                              onChange={(e) => setEscrituraInput(e.target.value)}
+                              placeholder="Escritura No. 2212 de Notaría Urabá"
+                              className="w-full border p-1 rounded font-mono text-[11px] bg-white focus:outline-none"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-600">Código Tradición y Libertad:</label>
+                            <input
+                              type="text"
+                              value={certificadoTradicionInput}
+                              onChange={(e) => setCertificadoTradicionInput(e.target.value)}
+                              placeholder="Matrícula Inmobiliaria 040-XXXXX"
+                              className="w-full border p-1 rounded font-mono text-[11px] bg-white focus:outline-none"
+                              required
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {sectorKycSelect === 'transporte' && (
+                      <div className="p-4 bg-purple-50/45 border border-purple-150 rounded-xl space-y-3">
+                        <span className="text-[10px] uppercase font-black text-purple-800">Prerrequisito Transporte & Logística:</span>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          Habilita tu camión o flota en la grilla de transportadores adjuntando tarjeta, seguro obligatorio y tu licencia de conductor pesada.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-600">Licencia Conducir (C2/C3):</label>
+                            <input
+                              type="text"
+                              value={driverLicenseInput}
+                              onChange={(e) => setDriverLicenseInput(e.target.value)}
+                              placeholder="Ej. CC-102030"
+                              className="w-full border p-1 rounded font-mono text-[11px] bg-white focus:outline-none"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-600">Poliza de Seguro SOAT:</label>
+                            <input
+                              type="text"
+                              value={soatInput}
+                              onChange={(e) => setSoatInput(e.target.value)}
+                              placeholder="Seguros Colombia No. S-44"
+                              className="w-full border p-1 rounded font-mono text-[11px] bg-white focus:outline-none"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-bold text-slate-600">Licencia de Tránsito:</label>
+                            <input
+                              type="text"
+                              value={propertyCardInput}
+                              onChange={(e) => setPropertyCardInput(e.target.value)}
+                              placeholder="Tarjeta No. TP-99"
+                              className="w-full border p-1 rounded font-mono text-[11px] bg-white focus:outline-none font-sans"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {(sectorKycSelect === 'hotelero' || sectorKycSelect === 'turismo') && (
+                      <div className="p-4 bg-purple-50/45 border border-purple-150 rounded-xl space-y-3">
+                        <span className="text-[10px] uppercase font-black text-purple-800">Prerrequisito Hotelero & Tours:</span>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          De acuerdo con la legislación colombiana (Ley de Turismo), todos los prestadores de hospedaje u operadores turísticos deben poseer RNT activo.
+                        </p>
+                        <div>
+                          <label className="block text-[9px] font-bold text-slate-600">Código Registro Nacional de Turismo (RNT):</label>
+                          <input
+                            type="text"
+                            value={rntLicenseInput}
+                            onChange={(e) => setRntLicenseInput(e.target.value)}
+                            placeholder="Ej. RNT-45521"
+                            className="w-full border border-slate-200 p-2 rounded font-mono text-xs focus:outline-none"
+                            required
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {level3Status === 'submitting' && (
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-[10px] font-mono text-emerald-400">
+                        <p className="animate-pulse">⏳ ANALIZANDO MATRICULAS FISCALES Y CERTIFICADOS SECTORIALES EN TIEMPO REAL...</p>
+                        <p className="text-slate-500 mt-1">• Consultando base de datos RNT de Ministerio de Comercio...</p>
+                        <p className="text-slate-500">• Verificando validez de NIT contra base nacional DIAN...</p>
+                        <p className="text-slate-500">• Revisando historiales de multas de vehículos en RUNT...</p>
+                        <p className="text-slate-200">• Verificación Corporativa completa. Estatus: EXCELENTE.</p>
+                      </div>
+                    )}
+
+                    {level3Status === 'success' && (
+                      <div className="p-4 bg-purple-50 text-purple-950 rounded-xl border border-purple-200 space-y-1">
+                        <p className="font-extrabold text-[11px] uppercase tracking-wide text-purple-800 flex items-center justify-between">
+                          <span>🎉 ¡Habilitación Nivel 3 Registrada!</span>
+                          <span className="px-1.5 py-0.5 bg-purple-200 text-purple-800 rounded text-[9.5px]">Corporativo Sinergía</span>
+                        </p>
+                        <p className="text-[10px] leading-relaxed text-slate-700">
+                          Tu solicitud corporativa ha sido verificada. Tus sellos de confianza corporativa **🔵 Empresa Verificada** y **🟣 KYC Completo** están activos para el sector **{sectorKycSelect.toUpperCase()}**.
+                        </p>
+                      </div>
+                    )}
+
+                    {level3Status === 'idle' && (
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-purple-650 hover:bg-purple-700 text-white rounded-xl font-bold uppercase transition-colors tracking-wider text-[10.5px]"
+                      >
+                        Someter Documentación Corporativa para Nivel 3
+                      </button>
+                    )}
+
+                  </form>
+                </div>
+              )}
+
+              {/* IS ALREADY LEVEL 3 DISPLAY */}
+              {currentUser.verifLevel === 3 && (
+                <div className="p-6 bg-gradient-to-r from-purple-900 to-indigo-900 text-white rounded-2xl border border-indigo-800 shadow-lg relative overflow-hidden space-y-4">
+                  <div className="absolute -top-12 -right-12 bg-white/5 w-32 h-32 rounded-full blur-xl"></div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="p-2 bg-white/10 rounded-xl">
+                      <ShieldCheck className="w-6 h-6 text-emerald-405 text-emerald-400" />
+                    </span>
+                    <div>
+                      <h4 className="font-mono text-[10px] uppercase font-black tracking-widest text-indigo-200">Zero Trust Safe Badge</h4>
+                      <h2 className="text-lg font-bold">Identidad Totalmente Convalidada</h2>
+                    </div>
+                  </div>
+                  <p className="text-xs text-indigo-150 leading-relaxed font-sans text-indigo-200">
+                    Tu cuenta posee el nivel máximo de verificación **Nivel 3: KYC Completo**. Estás completamente autorizado para comerciar, publicar inmuebles, operar hoteles, prestar transporte de fletes logísticos pesados, y realizar transacciones de liquidación financiera internacional en *Sinergia Connect*.
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                      <span className="text-[10px] text-indigo-205 block text-indigo-300">Razón Social:</span>
+                      <strong className="text-xs font-mono">{currentUser.kycDetails?.razonSocial || 'Persona Natural'}</strong>
+                    </div>
+                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+                      <span className="text-[10px] text-indigo-205 block text-indigo-300">NIT / ID Legal:</span>
+                      <strong className="text-xs font-mono">{currentUser.kycDetails?.nit || currentUser.documentId || ' CC 1020'}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+          </div>
+
         </div>
       )}
 

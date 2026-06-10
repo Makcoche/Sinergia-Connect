@@ -15,6 +15,32 @@ export interface UserProfile {
   avatar: string;
   companyId?: string; // For business roles
   phone?: string;     // Optional contact phone number
+  documentId?: string;
+  verifLevel?: 1 | 2 | 3; // 1: Invitado, 2: Usuario Verificado, 3: KYC Completo
+  sellos?: string[]; // e.g. ["🟢 Usuario Verificado", "🔵 Empresa Verificada", "🟣 KYC Completo", "🟡 Negocio Destacado", "⭐ Premium", "🏆 Aliado Estratégico Sinergia"]
+  isMfaEnabled?: boolean;
+  mfaType?: 'sms' | 'email' | 'totp' | 'none';
+  mfaSecret?: string;
+  loginAttempts?: number;
+  isAccountBlocked?: boolean;
+  lastLoginIp?: string;
+  kycDetails?: {
+    selfieUrl?: string;
+    docFrontUrl?: string;
+    docBackUrl?: string;
+    submittedAt?: string;
+    status: 'pending' | 'in_review' | 'verified' | 'suspended' | 'rejected' | 'none';
+    razonSocial?: string;
+    nit?: string;
+    camComercioUrl?: string;
+    soat?: string;
+    licenciaConducir?: string;
+    tarjetaPropiedad?: string;
+    rnt?: string; // Registro Nacional de Turismo
+    escrituraUrl?: string;
+    certificadoTradicionUrl?: string;
+    specificSectors?: ('inmobiliaria' | 'transporte' | 'hotelero' | 'turismo')[];
+  };
 }
 
 export interface Company {
