@@ -1,0 +1,6 @@
+{
+  "name": "Sinergia Connect",
+  "description": "Una súper app SaaS integral que combina marketplace, logística y transporte, reserva de hoteles, turismo, contratación de profesionales, wallet digital, chat y un potente panel de administración multi-rol.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
