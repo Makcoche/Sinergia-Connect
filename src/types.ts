@@ -14,6 +14,7 @@ export interface UserProfile {
   role: UserRole;
   avatar: string;
   companyId?: string; // For business roles
+  phone?: string;     // Optional contact phone number
 }
 
 export interface Company {

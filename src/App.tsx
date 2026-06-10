@@ -46,6 +46,15 @@ import ProfessionalsModule from './components/ProfessionalsModule';
 import ChatModule from './components/ChatModule';
 import AdminDashboard from './components/AdminDashboard';
 import NotificationsFeed from './components/NotificationsFeed';
+import OnboardingModule from './components/OnboardingModule';
+import InicioModule from './components/InicioModule';
+import EventosModule from './components/EventosModule';
+import DirectorioModule from './components/DirectorioModule';
+import ContactoModule from './components/ContactoModule';
+import SaaSCompanyPanel from './components/SaaSCompanyPanel';
+import SaaSClientPanel from './components/SaaSClientPanel';
+import InmobiliariaModule from './components/InmobiliariaModule';
+import GastronomiaModule from './components/GastronomiaModule';
 
 import { 
   WalletCards, 
@@ -64,18 +73,43 @@ import {
   Sparkles,
   Search,
   CheckCircle2,
-  BookOpen
+  BookOpen,
+  LogOut,
+  Home,
+  Music,
+  FolderLock,
+  Heart,
+  Phone,
+  Layers,
+  Utensils
 } from 'lucide-react';
 
 export default function App() {
-  // Navigation active tab
+  // Navigation active tab (matching USER MENU INTEGRATION)
   const [activeTab, setActiveTab] = useState<
-    'marketplace' | 'logistics' | 'hotels' | 'tours' | 'professionals' | 'wallet' | 'chat' | 'admin'
-  >('marketplace');
+    | 'inicio'
+    | 'empresas'
+    | 'marketplace'
+    | 'tours'
+    | 'hotels'
+    | 'logistics'
+    | 'professionals'
+    | 'eventos'
+    | 'directorio'
+    | 'contacto'
+    | 'wallet'
+    | 'chat'
+    | 'admin'
+    | 'saas_company'
+    | 'saas_client'
+    | 'onboarding'
+    | 'inmobiliaria'
+    | 'gastronomia'
+  >('inicio');
 
   // Core App states for real-time Sandbox data retention
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [currentUserId, setCurrentUserId] = useState<string>('usr-3'); // Start as 'Valeria Restrepo' (Client) to explore marketplace and buy easily!
+  const [currentUserId, setCurrentUserId] = useState<string>('usr-1'); // Start as 'Jose Gregorio Admin' (Super Admin, josegregoriourdanetaguadama@gmail.com) by default!
   const [companies, setCompanies] = useState<Company[]>(INITIAL_COMPANIES);
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [logistics, setLogistics] = useState<LogisticsRequest[]>(INITIAL_LOGISTICS);
@@ -90,6 +124,9 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+
+  // Favorites list tracking for client-panel
+  const [favorites, setFavorites] = useState<string[]>(['prod-2', 'room-1', 'tour-1']);
 
   // Simulated wallets state map (userId -> wallet)
   const [wallets, setWallets] = useState<Record<string, Wallet>>({
@@ -109,10 +146,50 @@ export default function App() {
     { id: 'tx-2', userId: 'usr-3', type: 'payment_made', amount: 480.00, description: 'Reserva Tour Eje Cafetero', timestamp: '2026-06-09T11:45:00Z', status: 'completed' }
   ]);
 
+  // Favorites handlers
+  const handleAddToFavorites = (id: string) => {
+    if (!favorites.includes(id)) {
+      setFavorites(prev => [...prev, id]);
+      triggerNotification('Añadido a Favoritos', 'Elemento guardado en tu portafolio de interés.', 'system');
+    }
+  };
+
+  const handleRemoveFavorite = (id: string) => {
+    setFavorites(prev => prev.filter(item => item !== id));
+  };
+
+  // Event booking handler
+  const handleBookEvent = (id: string, name: string, price: number, date: string) => {
+    const updatedWallets = { ...wallets };
+    updatedWallets[currentUserId].balanceCopUSD -= price;
+    updatedWallets['usr-1'].balanceCopUSD += price; // super admin receives event logistics payouts
+    setWallets(updatedWallets);
+
+    const eventTx: Transaction = {
+      id: `tx-${Math.floor(Math.random() * 9000 + 1000)}`,
+      userId: currentUserId,
+      type: 'payment_made',
+      amount: price,
+      description: `Reserva Evento Escrow #${id}: ${name} (${date})`,
+      timestamp: new Date().toISOString(),
+      status: 'completed'
+    };
+    setTransactions(prev => [eventTx, ...prev]);
+    addAuditLog('Reserva Evento', `Alquiler de elemento/artista para eventos: ${name} por un valor de $${price.toFixed(2)} USD.`);
+  };
+
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
 
-  // Active user details
-  const currentUser = users.find(u => u.id === currentUserId) || users[2];
+  // Active user details with a guest fallback
+  const GUEST_USER: UserProfile = {
+    id: 'guest',
+    name: 'Invitado (Sin Conexión)',
+    email: 'invitado@sinergiaconnect.com',
+    role: 'client',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+  };
+
+  const currentUser = users.find(u => u.id === currentUserId) || GUEST_USER;
   const userWallet = wallets[currentUserId] || { userId: currentUserId, balanceCodeToken: 'SNG', balanceCopUSD: 0.00, accountNumber: 'SNG-EMPTY' };
 
   // 1. Audit logger action helper
@@ -158,6 +235,75 @@ export default function App() {
         setActiveTab('marketplace');
       }
     }
+  };
+
+  const handleOnboardingRegister = (
+    userPayload: Omit<UserProfile, 'id'>,
+    companyPayload?: Omit<Company, 'id' | 'createdAt'>
+  ) => {
+    const newUserId = `usr-${users.length + 1}`;
+    let newCompanyId: string | undefined = undefined;
+
+    if (companyPayload) {
+      newCompanyId = `comp-${companies.length + 1}`;
+      const newCompany: Company = {
+        ...companyPayload,
+        id: newCompanyId,
+        createdAt: new Date().toISOString().split('T')[0]
+      };
+      setCompanies(prev => [...prev, newCompany]);
+    }
+
+    const newUser: UserProfile = {
+      ...userPayload,
+      id: newUserId,
+      companyId: newCompanyId
+    };
+
+    setUsers(prev => [...prev, newUser]);
+
+    // Create custom Wallet
+    const accountCode = `SNG-${Math.floor(Math.random() * 9000 + 1000)}-${userPayload.name.replace(/\s+/g, '').toUpperCase().substring(0, 8)}`;
+    const newWallet: Wallet = {
+      userId: newUserId,
+      balanceCodeToken: 'SNG',
+      balanceCopUSD: 2500.00,
+      accountNumber: accountCode
+    };
+
+    setWallets(prev => ({
+      ...prev,
+      [newUserId]: newWallet
+    }));
+
+    // Switch current user session immediately to this newly created user
+    setCurrentUserId(newUserId);
+
+    addAuditLog(
+      'Registro Onboarding Multi-user',
+      `Creado perfil e inquilino para "${userPayload.name}" - Rol: ${userPayload.role}. Asignado Monedero: ${accountCode}`
+    );
+
+    triggerNotification(
+      'Bienvenido a Sinergia Connect',
+      `¡Hola ${userPayload.name}! Se te ha acreditado un saldo de bienvenida de $2,500.00 USD en tu Wallet virtual.`,
+      'wallet'
+    );
+  };
+
+  const handleSwitchSession = (userId: string) => {
+    const matchedUser = users.find(u => u.id === userId);
+    if (matchedUser) {
+      setCurrentUserId(matchedUser.id);
+      addAuditLog('Conexión Sesión Activa', `Cambiando de forma interactiva a la sesión de: ${matchedUser.name}`);
+      triggerNotification('Sesión conectada exitosamente', `Operando ahora como ${matchedUser.name} (${matchedUser.role}).`, 'system');
+    }
+  };
+
+  const handleLogout = () => {
+    addAuditLog('Cierre de Sesión', `El usuario "${currentUser.name}" ha cerrado su sesión de forma manual.`);
+    setCurrentUserId('guest');
+    triggerNotification('Sesión finalizada', 'Sesión cerrada. Ahora estás navegando en modo Invitado.', 'system');
   };
 
   // 4. Wallet recharge
@@ -260,6 +406,27 @@ export default function App() {
   // 7. Product stock modify callback
   const handleProductStockChange = (productId: string, newStock: number) => {
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStock } : p));
+  };
+
+  const handleDecreaseWallet = (amount: number, detail: string) => {
+    const updatedWallets = { ...wallets };
+    if (updatedWallets[currentUserId]) {
+      updatedWallets[currentUserId].balanceCopUSD -= amount;
+      updatedWallets['usr-1'].balanceCopUSD += amount;
+      setWallets(updatedWallets);
+
+      const newTx: Transaction = {
+        id: `tx-${Math.floor(Math.random() * 9000 + 1000)}`,
+        userId: currentUserId,
+        type: 'payment_made',
+        amount,
+        description: detail,
+        timestamp: new Date().toISOString(),
+        status: 'completed'
+      };
+      setTransactions(prev => [newTx, ...prev]);
+      addAuditLog('Pago Sinergia Pay (Gastronomía)', `${detail} - Monto: $${amount.toFixed(2)} USD`);
+    }
   };
 
   // 8. Logistics Request Dispatch
@@ -525,24 +692,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Interactive Role Switcher Drawer (Renders everywhere for elite demo flexibility) */}
-          <div className="hidden lg:flex items-center gap-3 bg-slate-55 p-2 rounded-xl border border-slate-200 max-w-sm">
-            <span className="text-[10px] uppercase font-mono font-bold text-indigo-600">🔑 Rol Activo:</span>
-            <select
-              id="role-identity-selector"
-              value={currentUser.role}
-              onChange={(e) => handleUserRoleChange(e.target.value as UserRole)}
-              className="bg-white text-slate-800 font-semibold font-sans text-xs px-2.5 py-1.5 rounded-lg focus:outline-none border border-slate-200 cursor-pointer shadow-xs"
-            >
-              <option value="super_admin">🛡️ Super Administrador (Control Absoluto)</option>
-              <option value="company_admin">💼 Administrador de Empresa (Carlos)</option>
-              <option value="client">👤 Cliente Final (Valeria Restrepo)</option>
-              <option value="driver">🚛 Transportador / Chofer (Manuel)</option>
-              <option value="tour_operator">🏔️ Operador Turístico (Diana)</option>
-              <option value="hotel_admin">🏨 Administrador de Hoteles (Santiago)</option>
-              <option value="merchant">🛍️ Comercio Afiliado (Lina)</option>
-            </select>
-          </div>
 
           {/* User state and Quick Alerts Feed triggers */}
           <div className="flex items-center gap-4 text-xs font-medium">
@@ -582,8 +731,8 @@ export default function App() {
               )}
             </div>
 
-            {/* Simple User profile banner */}
-            <div className="flex items-center gap-2 border-l border-slate-200 pl-4 select-none">
+            {/* Simple User profile banner with Logout simulation */}
+            <div className="flex items-center gap-3 border-l border-slate-200 pl-4 select-none">
               <img
                 src={currentUser.avatar}
                 alt={currentUser.name}
@@ -594,29 +743,35 @@ export default function App() {
                 <p className="font-extrabold text-slate-800 text-xs lines-clamp-1">{currentUser.name}</p>
                 <p className="text-[9px] font-mono capitalize tracking-wider text-slate-500">{currentUser.role.replace('_', ' ')}</p>
               </div>
+
+              {currentUserId !== 'guest' ? (
+                <button
+                  id="header-logout-btn"
+                  onClick={() => handleLogout()}
+                  className="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-rose-200 cursor-pointer flex items-center gap-1"
+                  title="Cerrar Sesión Activa"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span className="hidden lg:inline">Salir</span>
+                </button>
+              ) : (
+                <button
+                  id="header-login-btn"
+                  onClick={() => {
+                    setActiveTab('onboarding');
+                    triggerNotification('Inicio de Sesión', 'Por favor selecciona un perfil o regístrate en el Portal de Identidad.', 'system');
+                  }}
+                  className="p-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-150 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border border-indigo-200 cursor-pointer flex items-center gap-1 animate-pulse"
+                >
+                  <span>Conectar</span>🔑
+                </button>
+              )}
             </div>
 
           </div>
         </div>
       </header>
 
-      {/* Identity switcher for Mobile Screen Viewports */}
-      <div className="lg:hidden bg-white border-b border-slate-200 p-2 text-center text-slate-700">
-        <label className="text-[10px] uppercase font-mono text-indigo-600 mr-2">🔑 Swap Identity:</label>
-        <select
-          value={currentUser.role}
-          onChange={(e) => handleUserRoleChange(e.target.value as UserRole)}
-          className="bg-slate-50 text-slate-800 border border-slate-200 font-semibold text-[11px] p-1.5 rounded focus:outline-none"
-        >
-          <option value="super_admin">🛡️ Super Admin</option>
-          <option value="company_admin">💼 Company Admin</option>
-          <option value="client">👤 Client (Valeria)</option>
-          <option value="driver">🚛 Driver (Manuel)</option>
-          <option value="tour_operator">🏔️ Tour Operator</option>
-          <option value="hotel_admin">🏨 Hotel Admin</option>
-          <option value="merchant">🛍️ Merchant (Lina)</option>
-        </select>
-      </div>
 
       {/* Main Core Matrix container layout with Left Sidebar and Right active widget */}
       <main className="max-w-7xl mx-auto px-4 lg:px-6 py-6 flex-grow flex flex-col lg:flex-row gap-6">
@@ -624,82 +779,219 @@ export default function App() {
         {/* Navigation Left Sidebar */}
         <nav className="w-full lg:w-64 flex-shrink-0 space-y-4">
           
-          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5 shadow-sm">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2 select-none">Módulos de Ecosistema</h4>
+          {/* USER CUSTOM CONTROLS DYNAMIC SECTION */}
+          {currentUserId !== 'guest' ? (
+            <div className="bg-indigo-950 text-white rounded-xl p-4 space-y-2 border border-indigo-900 shadow-md">
+              <span className="text-[9px] font-mono font-black uppercase text-emerald-400 tracking-wider">🔒 Consola Segura Sandbox</span>
+              
+              {/* If user is client, show Client Panel */}
+              {currentUser.role === 'client' && (
+                <button
+                  id="sidebar-tab-saas-client"
+                  onClick={() => setActiveTab('saas_client')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === 'saas_client'
+                      ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                      : 'text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  <Users className="w-4 h-4 text-emerald-300" />
+                  👤 Mi Cuenta Cliente
+                </button>
+              )}
+
+              {/* If user has business role, show SaaS Corporate panel */}
+              {(['company_admin', 'merchant', 'hotel_admin', 'tour_operator', 'driver'].includes(currentUser.role)) && (
+                <button
+                  id="sidebar-tab-saas-company"
+                  onClick={() => setActiveTab('saas_company')}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === 'saas_company'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-slate-200 hover:bg-white/10'
+                  }`}
+                >
+                  <Building2 className="w-4 h-4 text-indigo-300" />
+                  🏢 Mi Panel Empresa (SaaS)
+                </button>
+              )}
+            </div>
+          ) : null}
+
+          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-1 shadow-sm">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2 select-none">Menú Principal</h4>
             
             <button
-              id="sidebar-tab-marketplace"
-              onClick={() => setActiveTab('marketplace')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'marketplace'
+              id="sidebar-tab-inicio"
+              onClick={() => setActiveTab('inicio')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                activeTab === 'inicio'
                   ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
                   : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
               }`}
             >
-              <ShoppingCart className="w-4 h-4 text-pink-500" />
-              1. Marketplace
+              <Home className="w-4 h-4 text-indigo-600" />
+              Inicio (Portal)
             </button>
 
             <button
-              id="sidebar-tab-logistics"
-              onClick={() => setActiveTab('logistics')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'logistics'
+              id="sidebar-tab-onboarding"
+              onClick={() => setActiveTab('onboarding')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                activeTab === 'onboarding'
                   ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
                   : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
               }`}
             >
-              <Truck className="w-4 h-4 text-emerald-500" />
-              2. Logística & Carga
+              <Users className="w-4 h-4 text-indigo-600" />
+              Sesión & Registro
             </button>
 
-            <button
-              id="sidebar-tab-hotels"
-              onClick={() => setActiveTab('hotels')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'hotels'
-                  ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
-              }`}
-            >
-              <Building2 className="w-4 h-4 text-sky-500" />
-              3. Hotelería
-            </button>
+            <div className="pt-2 border-t border-slate-100 mt-2 space-y-1">
+              <span className="text-[9.5px] font-black text-slate-400 px-2 uppercase tracking-widest block mb-2 select-none">
+                ⚙ 9 Sectores Oficiales
+              </span>
+
+              <button
+                id="sidebar-tab-marketplace"
+                onClick={() => setActiveTab('marketplace')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'marketplace'
+                    ? 'bg-pink-50 border border-pink-100 text-pink-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4 text-pink-500" />
+                1. Comercio (E-commerce)
+              </button>
+
+              <button
+                id="sidebar-tab-inmobiliaria"
+                onClick={() => setActiveTab('inmobiliaria')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'inmobiliaria'
+                    ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Home className="w-4 h-4 text-indigo-500" />
+                2. Inmobiliaria (Venta/Renta)
+              </button>
+
+              <button
+                id="sidebar-tab-logistics"
+                onClick={() => setActiveTab('logistics')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'logistics'
+                    ? 'bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Truck className="w-4 h-4 text-emerald-500" />
+                3. Transporte y Logística
+              </button>
+
+              <button
+                id="sidebar-tab-hotels"
+                onClick={() => setActiveTab('hotels')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'hotels'
+                    ? 'bg-sky-50 border border-sky-100 text-sky-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Building2 className="w-4 h-4 text-sky-500" />
+                4. Hotelería (Hospedajes)
+              </button>
+
+              <button
+                id="sidebar-tab-tours"
+                onClick={() => setActiveTab('tours')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'tours'
+                    ? 'bg-amber-50 border border-amber-100 text-amber-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Compass className="w-4 h-4 text-amber-500" />
+                5. Turismo (Tours)
+              </button>
+
+              <button
+                id="sidebar-tab-gastronomia"
+                onClick={() => setActiveTab('gastronomia')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'gastronomia'
+                    ? 'bg-red-50 border border-red-100 text-red-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Utensils className="w-4 h-4 text-red-550" />
+                6. Gastronomía (Pedidos)
+              </button>
+
+              <button
+                id="sidebar-tab-professionals"
+                onClick={() => setActiveTab('professionals')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'professionals'
+                    ? 'bg-violet-50 border border-violet-100 text-violet-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Briefcase className="w-4 h-4 text-violet-500" />
+                7. Servicios Expertos
+              </button>
+
+              <button
+                id="sidebar-tab-eventos"
+                onClick={() => setActiveTab('eventos')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'eventos'
+                    ? 'bg-purple-50 border border-purple-100 text-purple-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-50 border border-transparent'
+                }`}
+              >
+                <Music className="w-4 h-4 text-purple-500" />
+                8. Eventos y Tarimas
+              </button>
+
+              <button
+                id="sidebar-tab-directorio"
+                onClick={() => setActiveTab('directorio')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'directorio'
+                    ? 'bg-teal-50 border border-teal-100 text-teal-700 font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
+                }`}
+              >
+                <Users className="w-4 h-4 text-teal-600" />
+                9. Directorio Comercial
+              </button>
+            </div>
 
             <button
-              id="sidebar-tab-tours"
-              onClick={() => setActiveTab('tours')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'tours'
+              id="sidebar-tab-contacto"
+              onClick={() => setActiveTab('contacto')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                activeTab === 'contacto'
                   ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
                   : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
               }`}
             >
-              <Compass className="w-4 h-4 text-amber-500" />
-              4. Eco-Turismo
+              <Phone className="w-4 h-4 text-rose-500" />
+              Contacto Soporte
             </button>
 
-            <button
-              id="sidebar-tab-professionals"
-              onClick={() => setActiveTab('professionals')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'professionals'
-                  ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
-              }`}
-            >
-              <Briefcase className="w-4 h-4 text-violet-500" />
-              5. Expertos
-            </button>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-1.5 shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-1 shadow-sm">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2 select-none">Billetera & Canales</h4>
 
             <button
               id="sidebar-tab-wallet"
               onClick={() => setActiveTab('wallet')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                 activeTab === 'wallet'
                   ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
                   : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
@@ -712,7 +1004,7 @@ export default function App() {
             <button
               id="sidebar-tab-chat"
               onClick={() => setActiveTab('chat')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
                 activeTab === 'chat'
                   ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold shadow-xs'
                   : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
@@ -724,44 +1016,26 @@ export default function App() {
           </div>
 
           {/* Restricted Admin section indicator */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2 select-none">Administración SaaS</h4>
+          {(currentUser.role === 'super_admin' || currentUser.role === 'company_admin') && (
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 px-2 select-none">Administración SaaS</h4>
 
-            <button
-              id="sidebar-tab-admin"
-              onClick={() => setActiveTab('admin')}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'admin'
-                  ? 'bg-slate-900 border border-slate-800 text-white font-bold shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
-              }`}
-            >
-              <ShieldAlert className="w-4 h-4 text-rose-500" />
-              8. Panel Control
-            </button>
-          </div>
+              <button
+                id="sidebar-tab-admin"
+                onClick={() => setActiveTab('admin')}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+                  activeTab === 'admin'
+                    ? 'bg-slate-900 border border-slate-800 text-white font-bold shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-55/80 border border-transparent'
+                }`}
+              >
+                <ShieldAlert className="w-4 h-4 text-rose-500" />
+                8. Panel Control
+              </button>
+            </div>
+          )}
 
-          {/* Simulated stats card - Clean Utility Theme */}
-          <div className="hidden lg:block bg-slate-900 text-white p-5 rounded-xl border border-slate-800 space-y-3 shadow-md">
-            <div className="flex justify-between items-center text-[10px] font-bold tracking-widest text-indigo-400">
-              <span className="uppercase">Auditoría Cloud</span>
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-            </div>
-            <div className="space-y-1.5 text-[11px] font-medium text-slate-300">
-              <p className="flex justify-between">
-                <span>Tenants Activos:</span>
-                <span className="font-mono text-emerald-400 uppercase text-[10px] font-bold">{companies.length}</span>
-              </p>
-              <p className="flex justify-between">
-                <span>Auditoría logs:</span>
-                <span className="font-mono text-indigo-300 text-[10px] font-semibold">{auditLogs.length} logs</span>
-              </p>
-              <p className="flex justify-between">
-                <span>Estado de Red:</span>
-                <span className="font-mono text-emerald-400 text-[10px] uppercase font-bold">Online</span>
-              </p>
-            </div>
-          </div>
+
 
         </nav>
 
@@ -769,6 +1043,58 @@ export default function App() {
         <div className="flex-grow min-w-0">
           
           <div className="animate-fade-in">
+            {currentUserId === 'guest' && activeTab !== 'onboarding' && (
+              <div className="mb-4 p-3.5 bg-indigo-50 border border-indigo-250 rounded-2xl text-xs text-indigo-900 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 animate-pulse shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-1 px-1.5 bg-white rounded-lg border border-indigo-100 shadow-3xs text-sm">🔓</span>
+                  <div>
+                    <h5 className="font-extrabold text-slate-800">Cuentas Sandbox Virtualizadas</h5>
+                    <p className="text-slate-500 text-[11px] mt-0.5">Estás navegando en modo Invitado. Conéctate con una empresa regional para procesar órdenes, despachos, canjear tokens o programar reservas.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setActiveTab('onboarding');
+                    triggerNotification('Inicio de Sesión', 'Selecciona o ingresa una cuenta de pruebas.', 'system');
+                  }}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-lg uppercase tracking-wider text-[10px] transition-all cursor-pointer flex-shrink-0"
+                >
+                  Conectar Sesión 🔑
+                </button>
+              </div>
+            )}
+            {activeTab === 'inicio' && (
+              <InicioModule
+                companies={companies}
+                products={products}
+                rooms={rooms}
+                tours={tours}
+                professionals={professionals}
+                onNavigateTab={setActiveTab}
+                onAddToFavorites={handleAddToFavorites}
+                favorites={favorites}
+              />
+            )}
+
+            {activeTab === 'empresas' && (
+              <DirectorioModule
+                companies={companies}
+                onSwitchSession={handleSwitchSession}
+              />
+            )}
+
+            {activeTab === 'onboarding' && (
+              <OnboardingModule
+                users={users}
+                companies={companies}
+                wallets={wallets}
+                currentUser={currentUser}
+                onRegisterUser={handleOnboardingRegister}
+                onSwitchSession={handleSwitchSession}
+                onLogout={handleLogout}
+              />
+            )}
+
             {activeTab === 'marketplace' && (
               <MarketplaceModule
                 products={products}
@@ -785,6 +1111,7 @@ export default function App() {
                 wallet={userWallet}
                 onCreateRequest={handleCreateLogisticsRequest}
                 onUpdateStatus={handleUpdateLogisticsStatus}
+                isGuest={currentUserId === 'guest'}
               />
             )}
 
@@ -818,6 +1145,45 @@ export default function App() {
               />
             )}
 
+            {activeTab === 'eventos' && (
+              <EventosModule
+                wallet={userWallet}
+                onBookItem={handleBookEvent}
+                triggerNotification={triggerNotification}
+              />
+            )}
+
+            {activeTab === 'inmobiliaria' && (
+              <InmobiliariaModule
+                wallet={userWallet}
+                onDecreaseWallet={handleDecreaseWallet}
+                triggerNotification={triggerNotification}
+                isGuest={currentUserId === 'guest'}
+              />
+            )}
+
+            {activeTab === 'gastronomia' && (
+              <GastronomiaModule
+                wallet={userWallet}
+                onRechargeWallet={(amt) => handleRechargeWallet(amt, 'Recarga de Sinergia Gastronomía')}
+                onDecreaseWallet={handleDecreaseWallet}
+                triggerNotification={triggerNotification}
+              />
+            )}
+
+            {activeTab === 'directorio' && (
+              <DirectorioModule
+                companies={companies}
+                onSwitchSession={handleSwitchSession}
+              />
+            )}
+
+            {activeTab === 'contacto' && (
+              <ContactoModule
+                onAddAuditLog={addAuditLog}
+              />
+            )}
+
             {activeTab === 'wallet' && (
               <WalletModule
                 wallet={userWallet}
@@ -833,6 +1199,36 @@ export default function App() {
                 messages={messages}
                 onSendMessage={handleSendMessage}
                 onSimulateIncomingMessage={handleSimulateIncomingMessage}
+              />
+            )}
+
+            {activeTab === 'saas_client' && (
+              <SaaSClientPanel
+                currentUser={currentUser}
+                wallet={userWallet}
+                transactions={transactions}
+                products={products}
+                rooms={rooms}
+                tours={tours}
+                onRechargeWallet={handleRechargeWallet}
+                onTransferWallet={handleTransferWallet}
+                onNavigateTab={setActiveTab}
+                triggerNotification={triggerNotification}
+                favorites={favorites}
+                onRemoveFavorite={handleRemoveFavorite}
+              />
+            )}
+
+            {activeTab === 'saas_company' && (
+              <SaaSCompanyPanel
+                currentCompany={companies.find(c => c.id === currentUser.companyId) || companies[0]}
+                products={products}
+                users={users}
+                onAddProduct={handleAddProduct}
+                onDeleteProduct={handleDeleteProduct}
+                onUpdateCompany={handleUpdateCompany}
+                onAddAuditLog={addAuditLog}
+                triggerNotification={triggerNotification as any}
               />
             )}
 

@@ -7,9 +7,10 @@ interface LogisticsModuleProps {
   wallet: Wallet;
   onCreateRequest: (request: Omit<LogisticsRequest, 'id' | 'createdAt' | 'progress' | 'companyId'>) => void;
   onUpdateStatus: (id: string, status: LogisticsRequest['status'], progress: number) => void;
+  isGuest?: boolean;
 }
 
-export default function LogisticsModule({ logisticsRequests, wallet, onCreateRequest, onUpdateStatus }: LogisticsModuleProps) {
+export default function LogisticsModule({ logisticsRequests, wallet, onCreateRequest, onUpdateStatus, isGuest }: LogisticsModuleProps) {
   const [pickup, setPickup] = useState('');
   const [delivery, setDelivery] = useState('');
   const [cargoType, setCargoType] = useState<'cargo' | 'relocation' | 'refrigerated'>('cargo');
@@ -52,6 +53,10 @@ export default function LogisticsModule({ logisticsRequests, wallet, onCreateReq
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isGuest) {
+      alert('🚫 Operación Denegada: Como usuario invitado no tienes permisos para solicitar ni publicar servicios de carga o mudanzas. Por favor regístrate o inicia sesión con una cuenta para el acceso completo.');
+      return;
+    }
     const w = parseFloat(weight);
     if (!pickup || !delivery || !desc || isNaN(w) || w <= 0) {
       alert('Por favor completa todos los campos del envío para calcular la cotización.');
@@ -107,13 +112,33 @@ export default function LogisticsModule({ logisticsRequests, wallet, onCreateReq
 
         <button
           id="btn-new-freight"
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-md shadow-emerald-500/10 transition-colors flex items-center gap-1"
+          onClick={() => {
+            if (isGuest) {
+              alert('🚫 Operación No Permitida: Como usuario Invitado no puedes publicar activos o fletes en los sectores. Por favor ve a la pestaña "Sesión & Registro" para registrarte o iniciar sesión.');
+            } else {
+              setShowForm(!showForm);
+            }
+          }}
+          className={`px-4 py-2 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1 ${
+            isGuest 
+              ? 'bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed opacity-70 shadow-none' 
+              : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/10'
+          }`}
         >
           <Truck className="w-4 h-4" />
           {showForm ? 'Cerrar Cotizador' : 'Nueva Cotización de Carga'}
         </button>
       </div>
+
+      {isGuest && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 flex items-start gap-2.5 shadow-xs font-sans">
+          <span className="text-base select-none">⚠️</span>
+          <div className="space-y-1">
+            <p className="font-extrabold uppercase tracking-wide text-[10px] text-amber-900">Modo de Navegación: Invitado</p>
+            <p className="leading-relaxed">Actualmente estás explorando Sinergia Connect como <strong>Invitado (Sin Conexión)</strong>. <strong>No tienes permitido publicar activos ni registrar solicitudes de carga</strong> en ninguno de los sectores. Por favor inicia sesión o crea una cuenta desde la pestaña <strong>"Sesión & Registro"</strong> para activar estas funcionalidades.</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
